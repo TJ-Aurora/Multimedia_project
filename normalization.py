@@ -2,6 +2,7 @@ import open3d as o3d
 import pymeshlab as pml
 import numpy as np
 from copy import deepcopy
+import os
 
 from read_data import read_mesh
 
@@ -12,7 +13,7 @@ make a mesh centered at the origin of the coordinate frame
 def translation(mesh):
     #get axes and center
     world_axes = o3d.geometry.TriangleMesh.create_coordinate_frame()
-    world_center = world_axes.get_center()
+    world_center = [0, 0, 0]
 
     #translate to the origin
     mesh_translated = deepcopy(mesh).translate(np.negative(world_center))
@@ -139,7 +140,52 @@ def rescale(mesh):
 
     return rescaled_mesh
 
+"""
+do normalization in a single mesh
+"""
+def normalize_single_mesh(root, name, new_folder):
+    #read the mesh
+    file_path = os.path.join(root, name)
+    file_class = root.split("\\")[1]
+    mesh = read_mesh(file_path)
 
+    #do the 4 steps normalization
+    mesh_translated = translation(mesh)
+    eigenvalues, eigenvectors = PCA(mesh_translated)
+    aligned_mesh = alignment(mesh_translated, eigenvectors)
+    orientated_mesh = orientation(aligned_mesh)
+    rescaled_mesh = rescale(orientated_mesh)
+
+    #save new mesh
+    new_class_folder = os.path.join(new_folder, file_class)
+    if not os.path.exists(new_class_folder):
+        os.makedirs(new_class_folder)
+    new_path = os.path.join(new_folder, file_class, name)
+
+    rescaled_mesh.triangle_normals = o3d.utility.Vector3dVector([]) #avoid warning "[Open3D WARNING] Write OBJ can not include triangle normals."
+    o3d.io.write_triangle_mesh(new_path, rescaled_mesh, print_progress = True)
+
+
+"""
+do normalization in all meshes of a database
+"""
+def normalize_database(path):
+    new_folder = "database_normalized"
+    if not os.path.exists(new_folder):
+        os.makedirs(new_folder)
+    for root, dirs, files in os.walk(path):
+        for name in files:
+            if name.endswith('.obj'):
+                normalize_single_mesh(root, name, new_folder)
+
+
+
+
+path = "ShapeDatabase_INFOMR-master_remeshed"
+normalize_database(path)
+
+
+"""
 #TEST CODE: use your own file path here
 mesh = read_mesh("D00696.obj")
 triangles = np.asarray(mesh.triangles)
@@ -152,4 +198,6 @@ rescaled_mesh = rescale(orientated_mesh)
 
 world_axes = o3d.geometry.TriangleMesh.create_coordinate_frame()
 o3d.visualization.draw_geometries([world_axes, rescaled_mesh], mesh_show_wireframe=True)
+"""
+
 
