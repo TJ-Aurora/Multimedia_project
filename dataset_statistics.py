@@ -8,7 +8,7 @@ import pandas as pd
 from read_data import read_mesh
 from single_shape_analysis import single_shape_analysis
 
-path = "ShapeDatabase_INFOMR-master"
+path = "database_normalized"
 
 
 """
@@ -19,7 +19,7 @@ def read_all_meshes(path):
 
 	class_amount = 0
 	row_list = []
-	row_list.append(["file_path", "file_class", "file_name", "num_of_vertices", "num_of_triangles"])
+	row_list.append(["file_path", "file_class", "file_name", "num_of_vertices", "num_of_triangles", "surface_area"])
 
 	for root, dirs, files in os.walk(path):
 		class_amount += len(dirs)
@@ -27,13 +27,13 @@ def read_all_meshes(path):
 			if name.endswith('.obj'):
 				file_path = os.path.join(root, name)
 				mesh = read_mesh(file_path)
-				num_vertices, num_triangles = single_shape_analysis(mesh)
-				row_list.append([file_path, root.split("\\")[1], name, num_vertices, num_triangles])
+				num_vertices, num_triangles, surface_area = single_shape_analysis(mesh)
+				row_list.append([file_path, root.split("\\")[1], name, num_vertices, num_triangles, surface_area])
 
 	print("The amount of class is", class_amount)
 
 	#the file name is dataset_statistics.csv for original dataset, dataset_statistics_remeshed.csv for remeshed dataset
-	with open('dataset_statistics_remeshed.csv', 'w', newline='') as file:
+	with open('dataset_statistics_normalized.csv', 'w', newline='') as file:
 		writer = csv.writer(file)
 		writer.writerows(row_list)
 
@@ -146,10 +146,49 @@ def check_outliers(csv_file, target_min_vertices, target_max_vertices):
 	df.to_csv("faces_outliers_above.csv")
 	"""
 
+"""
+show surface area distribution for step 3.1
+"""
+def surface_area_distribution(csv_file):
+	whole_data = np.loadtxt(csv_file, delimiter=',', dtype=str)
+	data = whole_data[1:, :]
+
+
+	#compute the statistics of surface area 
+	ave_surface_area = np.mean(data[:, 5].astype(np.float64))
+	print("The average surface_area in whole database is", ave_surface_area)
+
+	median_surface_area = np.median(data[:, 5].astype(np.float64))
+	print("The median surface_area in whole database is", median_surface_area)
+
+	std_surface_area = np.std(data[:, 5].astype(np.float64))
+	print("The surface_area std in whole database is", std_surface_area)
+
+	max_surface_area_index = np.argmax(data[:, 5].astype(np.float64))
+	print("max surface_area is: ", np.max(data[:, 5].astype(np.float64)), 
+		"with class", data[:, 1][max_surface_area_index], "and name", data[:, 2][max_surface_area_index])
+
+	min_surface_area_index = np.argmin(data[:, 5].astype(np.float64))
+	print("min surface_area amount is: ", np.min(data[:, 5].astype(np.float64)), 
+		"with class", data[:, 1][min_surface_area_index], "and name", data[:, 2][min_surface_area_index])
+
+
+	_, _, bars = plt.hist(data[:, 5].astype(np.float64), bins = np.arange(0, 1.5, step=0.1))
+	plt.title('distribution of surface area')
+	plt.bar_label(bars)
+
+	values = np.arange(0, 1.5, 0.1)
+	plt.xticks(values)
+
+	plt.show()
+
+
 
 
 #read_all_meshes(path)
 
-target_min, target_max = distribute_dataset('dataset_statistics_remeshed.csv', 30, 70)
+#target_min, target_max = distribute_dataset('dataset_statistics_remeshed.csv', 30, 70)
 #check_outliers('dataset_statistics.csv', target_min, target_max)
+
+surface_area_distribution("dataset_statistics_normalized.csv")
 
