@@ -13,16 +13,16 @@ make a mesh centered at the origin of the coordinate frame
 def translation(mesh):
     #get axes and center
     world_axes = o3d.geometry.TriangleMesh.create_coordinate_frame()
-    world_center = [0, 0, 0]
+    barycenter = mesh.get_center()
 
     #translate to the origin
-    mesh_translated = deepcopy(mesh).translate(np.negative(world_center))
-    #o3d.visualization.draw_geometries([world_axes, mesh, mesh_translated])
+    mesh_translated = deepcopy(mesh).translate(np.negative(barycenter))
 
     return mesh_translated
 
 
 def PCA(mesh):
+    #calculate eigenvalues, eigenvectors
     vertices = np.asarray(mesh.vertices)
     cov = np.cov(vertices.transpose())
     eigenvalues, eigenvectors = np.linalg.eig(cov)
@@ -30,7 +30,7 @@ def PCA(mesh):
     #sort eigenvalues, the sequence of eigenvectors should follow their corresponse eigenvalues
     sorted_index = np.argsort(-eigenvalues)
     eigenvalues = eigenvalues[sorted_index]
-    eigenvectors = eigenvectors[sorted_index]
+    eigenvectors = eigenvectors[:, sorted_index]
 
     return eigenvalues, eigenvectors
 
@@ -42,13 +42,13 @@ def alignment(mesh, eigenvectors):
     vertices = np.asarray(mesh.vertices)
 
     #do projection in each axis
-    x_updated = np.dot(vertices, eigenvectors[0])
+    x_updated = np.dot(vertices, eigenvectors[:, 0])
     x_updated = np.resize(x_updated, (vertices.shape[0], 1))
 
-    y_updated = np.dot(vertices, eigenvectors[1])
+    y_updated = np.dot(vertices, eigenvectors[:, 1])
     y_updated = np.resize(y_updated, (vertices.shape[0], 1))
 
-    z_updated = np.dot(vertices, np.cross(eigenvectors[0], eigenvectors[1]))
+    z_updated = np.dot(vertices, np.cross(eigenvectors[:, 0], eigenvectors[:, 1]))
     z_updated = np.resize(z_updated, (vertices.shape[0], 1))
 
     vertices_updated = np.concatenate((x_updated, y_updated, z_updated), axis = 1)
@@ -116,28 +116,6 @@ def rescale(mesh):
     rescaled_mesh = deepcopy(mesh)
     rescaled_mesh.vertices = o3d.utility.Vector3dVector(updated_vertices)
 
-    """
-    #test code for rescale, you can see bound box from here
-    obb_points = obb.get_box_points()
-    obb_line_indices = [[0, 1], [1, 6], [6, 3], [3, 0], [0, 2], [2, 5], [5, 4], [4, 7], [7, 2], [6, 4], [1, 7], [3, 5]]
-    obb_lineset = o3d.geometry.LineSet(
-        points=o3d.utility.Vector3dVector(obb_points),
-        lines=o3d.utility.Vector2iVector(obb_line_indices),
-    )
-    blue = [0, 0, 255]
-    obb_lineset.colors = o3d.utility.Vector3dVector(np.array([blue] * 12))
-
-    # Visualize the geometry
-    to_draw = [rescaled_mesh]
-    to_draw.append(obb_lineset)
-    o3d.visualization.draw_geometries(
-        to_draw,
-        width=1280,
-        height=720,
-        mesh_show_wireframe=True
-    )
-    """
-
     return rescaled_mesh
 
 """
@@ -183,21 +161,3 @@ def normalize_database(path):
 
 path = "ShapeDatabase_INFOMR-master_remeshed"
 normalize_database(path)
-
-
-"""
-#TEST CODE: use your own file path here
-mesh = read_mesh("D00696.obj")
-triangles = np.asarray(mesh.triangles)
-mesh_translated = translation(mesh)
-eigenvalues, eigenvectors = PCA(mesh_translated)
-aligned_mesh = alignment(mesh_translated, eigenvectors)
-orientated_mesh = orientation(aligned_mesh)
-rescaled_mesh = rescale(orientated_mesh)
-
-
-world_axes = o3d.geometry.TriangleMesh.create_coordinate_frame()
-o3d.visualization.draw_geometries([world_axes, rescaled_mesh], mesh_show_wireframe=True)
-"""
-
-
