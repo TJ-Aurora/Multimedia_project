@@ -17,7 +17,7 @@ def eccentricity(mesh):
     sorted_index = np.argsort(-eigenvalues)
     eigenvalues = eigenvalues[sorted_index]
 
-    eccentricity = eigenvalues[0] / eigenvalues[1]
+    eccentricity = eigenvalues[0] / eigenvalues[2]
     return eccentricity
 
 """
