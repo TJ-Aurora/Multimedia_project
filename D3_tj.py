@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import os
 import csv
 
-SAMPLE_AMOUNT = 100000
+SAMPLE_AMOUNT = 1000000
 
 def random_choice(array, vertices_amount):
 	#array = np.random.choice(a = vertices_index, size = 3, replace = False)
@@ -35,7 +35,7 @@ def D3(mesh, sample_amount):
 	vector_1 = V2 - V1
 	vector_2 = V3 - V1
 
-	areas = 0.5 * np.linalg.norm(np.cross(vector_1, vector_2, axis = 1), axis = 1)
+	areas = np.sqrt(0.5 * np.linalg.norm(np.cross(vector_1, vector_2, axis = 1), axis = 1))
 	
 	return areas
 
@@ -95,6 +95,6 @@ areas = D3(mesh, SAMPLE_AMOUNT)
 print("--- %s seconds ---" % (time.time() - start_time))
 """
 
-path = 'database_normalized/AircraftBuoyant'
-#compute_feature_vector(path, bins_amount = 20, sample_amount = 1000000)
-D3_distributions(path)
+path = 'database_normalized'
+compute_feature_vector(path, bins_amount = 20, sample_amount = 1000000)
+#D3_distributions(path)

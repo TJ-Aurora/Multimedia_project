@@ -37,7 +37,7 @@ def D4(mesh, sample_amount):
 	vector_B = V3 - V1
 	vector_C = V4 - V1
 
-	volumns = np.absolute((1/6) * np.sum(np.multiply(np.cross(vector_A, vector_B, axis = 1), vector_C), axis = 1))
+	volumns = np.cbrt(np.absolute((1/6) * np.sum(np.multiply(np.cross(vector_A, vector_B, axis = 1), vector_C), axis = 1)))
 	
 	return volumns
 
@@ -99,4 +99,5 @@ print("--- %s seconds ---" % (time.time() - start_time))
 """
 
 path = 'database_normalized'
+#D4_distributions(path)
 compute_feature_vector(path, bins_amount = 20, sample_amount = 1000000)
